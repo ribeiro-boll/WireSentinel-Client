@@ -23,6 +23,6 @@ add_executable(WireSentinel_Client
         src/security.c
         src/buffer_list.c
         include/buffer_list.h
-        include/buffer_parsing_thread.h)
+)
 
 target_link_libraries(WireSentinel_Client PRIVATE OpenSSL::Crypto)
