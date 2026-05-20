@@ -1,0 +1,44 @@
+[
+{
+  "directory": "/home/bolota/Documentos/WireSentinel-Client/cmake-build-debug",
+  "command": "/usr/bin/cc -I/home/bolota/Documentos/WireSentinel-Client/include -g -std=gnu11 -fdiagnostics-color=always -o CMakeFiles/WireSentinel_Client.dir/src/jsonparser.c.o -c /home/bolota/Documentos/WireSentinel-Client/src/jsonparser.c",
+  "file": "/home/bolota/Documentos/WireSentinel-Client/src/jsonparser.c",
+  "output": "/home/bolota/Documentos/WireSentinel-Client/cmake-build-debug/CMakeFiles/WireSentinel_Client.dir/src/jsonparser.c.o"
+},
+{
+  "directory": "/home/bolota/Documentos/WireSentinel-Client/cmake-build-debug",
+  "command": "/usr/bin/cc -I/home/bolota/Documentos/WireSentinel-Client/include -g -std=gnu11 -fdiagnostics-color=always -o CMakeFiles/WireSentinel_Client.dir/src/main.c.o -c /home/bolota/Documentos/WireSentinel-Client/src/main.c",
+  "file": "/home/bolota/Documentos/WireSentinel-Client/src/main.c",
+  "output": "/home/bolota/Documentos/WireSentinel-Client/cmake-build-debug/CMakeFiles/WireSentinel_Client.dir/src/main.c.o"
+},
+{
+  "directory": "/home/bolota/Documentos/WireSentinel-Client/cmake-build-debug",
+  "command": "/usr/bin/cc -I/home/bolota/Documentos/WireSentinel-Client/include -g -std=gnu11 -fdiagnostics-color=always -o CMakeFiles/WireSentinel_Client.dir/src/misc.c.o -c /home/bolota/Documentos/WireSentinel-Client/src/misc.c",
+  "file": "/home/bolota/Documentos/WireSentinel-Client/src/misc.c",
+  "output": "/home/bolota/Documentos/WireSentinel-Client/cmake-build-debug/CMakeFiles/WireSentinel_Client.dir/src/misc.c.o"
+},
+{
+  "directory": "/home/bolota/Documentos/WireSentinel-Client/cmake-build-debug",
+  "command": "/usr/bin/cc -I/home/bolota/Documentos/WireSentinel-Client/include -g -std=gnu11 -fdiagnostics-color=always -o CMakeFiles/WireSentinel_Client.dir/src/packet_list.c.o -c /home/bolota/Documentos/WireSentinel-Client/src/packet_list.c",
+  "file": "/home/bolota/Documentos/WireSentinel-Client/src/packet_list.c",
+  "output": "/home/bolota/Documentos/WireSentinel-Client/cmake-build-debug/CMakeFiles/WireSentinel_Client.dir/src/packet_list.c.o"
+},
+{
+  "directory": "/home/bolota/Documentos/WireSentinel-Client/cmake-build-debug",
+  "command": "/usr/bin/cc -I/home/bolota/Documentos/WireSentinel-Client/include -g -std=gnu11 -fdiagnostics-color=always -o CMakeFiles/WireSentinel_Client.dir/src/packet_service.c.o -c /home/bolota/Documentos/WireSentinel-Client/src/packet_service.c",
+  "file": "/home/bolota/Documentos/WireSentinel-Client/src/packet_service.c",
+  "output": "/home/bolota/Documentos/WireSentinel-Client/cmake-build-debug/CMakeFiles/WireSentinel_Client.dir/src/packet_service.c.o"
+},
+{
+  "directory": "/home/bolota/Documentos/WireSentinel-Client/cmake-build-debug",
+  "command": "/usr/bin/cc -I/home/bolota/Documentos/WireSentinel-Client/include -g -std=gnu11 -fdiagnostics-color=always -o CMakeFiles/WireSentinel_Client.dir/src/security.c.o -c /home/bolota/Documentos/WireSentinel-Client/src/security.c",
+  "file": "/home/bolota/Documentos/WireSentinel-Client/src/security.c",
+  "output": "/home/bolota/Documentos/WireSentinel-Client/cmake-build-debug/CMakeFiles/WireSentinel_Client.dir/src/security.c.o"
+},
+{
+  "directory": "/home/bolota/Documentos/WireSentinel-Client/cmake-build-debug",
+  "command": "/usr/bin/cc -I/home/bolota/Documentos/WireSentinel-Client/include -g -std=gnu11 -fdiagnostics-color=always -o CMakeFiles/WireSentinel_Client.dir/src/buffer_list.c.o -c /home/bolota/Documentos/WireSentinel-Client/src/buffer_list.c",
+  "file": "/home/bolota/Documentos/WireSentinel-Client/src/buffer_list.c",
+  "output": "/home/bolota/Documentos/WireSentinel-Client/cmake-build-debug/CMakeFiles/WireSentinel_Client.dir/src/buffer_list.c.o"
+}
+]
