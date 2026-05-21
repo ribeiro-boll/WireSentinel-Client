@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 4.2)
+cmake_minimum_required(VERSION 3.16)
 project(WireSentinel_Client C)
 
 set(CMAKE_C_STANDARD 11)
@@ -22,7 +22,6 @@ add_executable(WireSentinel_Client
         src/packet_service.c
         src/security.c
         src/buffer_list.c
-        include/buffer_list.h
-)
+        include/buffer_list.h)
 
-target_link_libraries(WireSentinel_Client PRIVATE OpenSSL::Crypto)
+target_link_libraries(WireSentinel_Client PRIVATE OpenSSL::Crypto Threads::Threads)

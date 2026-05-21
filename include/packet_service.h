@@ -44,7 +44,7 @@ int fill_udp(unsigned char *buffer, int offset, FullInternetPacket* node);
  * Parsing da camada de rede (Layer 3)
  */
 void fill_ipv4(unsigned char *buffer, FullInternetPacket* node,int offset_ethernet);
-void fill_ipv6(unsigned char *buffer, FullInternetPacket* node,int offset_ethernet);
+int fill_ipv6(unsigned char *buffer, long int recvlen, FullInternetPacket* node,int offset_ethernet);
 
 /*
  * Função principal do parser

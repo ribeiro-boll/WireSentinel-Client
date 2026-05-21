@@ -9,20 +9,44 @@ void get_time(char *tempo, size_t size) {
     struct tm *tm_info = localtime(&timer);
     strftime(tempo, size, "%Y-%m-%dT%H:%M:%S", tm_info);
 }
+
 int extract_status_code(char* response) {
-    char* tst = strdup(response);
-    char *tk = strtok(tst, " ");
-    tk = strtok(NULL, "\n");
-    int code = atoi(tk);
-    free(tst);
+    if (response == NULL) return -1;
+
+    // Esperado: HTTP/1.1 200 ...
+    char *copy = strdup(response);
+    if (copy == NULL) return -1;
+
+    char *version = strtok(copy, " ");
+    char *status = strtok(NULL, " \r\n");
+
+    int code = -1;
+    if (version != NULL && status != NULL) {
+        code = atoi(status);
+    }
+
+    free(copy);
     return code;
 }
+
 void extract_uuid(char* response, char** uuid) {
-    char* tst = strdup(response);
-    //printf("\n\n\n\n%s\n\n%s\n\n\n\n", response, tst);
-    char *sep = strstr(tst, "\r\n\r\n");
-    *uuid = strdup(sep+4);
-    free(tst);
+    if (uuid == NULL) return;
+    *uuid = NULL;
+
+    if (response == NULL) return;
+
+    char *sep = strstr(response, "\r\n\r\n");
+    if (sep == NULL) return;
+
+    char *body = sep + 4;
+    size_t len = strcspn(body, "\r\n");
+    if (len == 0) return;
+
+    *uuid = malloc(len + 1);
+    if (*uuid == NULL) return;
+
+    memcpy(*uuid, body, len);
+    (*uuid)[len] = '\0';
 }
 /*
 

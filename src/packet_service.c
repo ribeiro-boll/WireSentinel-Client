@@ -67,7 +67,8 @@ int fill_udp(unsigned char *buffer, int offset, FullInternetPacket* node){
     return 8;
 }
 
-void fill_ipv6(unsigned char *buffer, FullInternetPacket* node, int offset_ethernet){
+int fill_ipv6(unsigned char *buffer, long int recvlen, FullInternetPacket* node, int offset_ethernet){
+    if (recvlen < offset_ethernet + 40) return 0;
     //int payload_lenght = ((((uint16_t)buffer[offset_ethernet + 4]) << 8) | buffer[offset_ethernet+5]);
     int ttl = buffer[offset_ethernet+7];
     int protocolo = buffer[offset_ethernet+6];
@@ -85,18 +86,25 @@ void fill_ipv6(unsigned char *buffer, FullInternetPacket* node, int offset_ether
     char ip_dest[64];
     snprintf(ip_dest, 64, "%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x", ip_dest_raw[0],ip_dest_raw[1],ip_dest_raw[2],ip_dest_raw[3],ip_dest_raw[4],ip_dest_raw[5],ip_dest_raw[6],ip_dest_raw[7],ip_dest_raw[8],ip_dest_raw[9],ip_dest_raw[10],ip_dest_raw[11],ip_dest_raw[12],ip_dest_raw[13],ip_dest_raw[14],ip_dest_raw[15]);
     strcpy(node->ip_destino, ip_dest);
-    node->total_header_lenght = 40;
+    node->total_header_lenght = offset_ethernet + 40;
     //node->tamanho_total_packet = payload_lenght;
     node->tempo_vida = ttl;
     int cond_break_loop = 1;
     int curr_index = 40 + offset_ethernet;
     while (cond_break_loop && cond_break_loop < 8){
         //printf("%d  %d\n",protocolo, curr_index);
+        if (curr_index < 0 || curr_index >= recvlen) {
+            node->protocolo_transporte = -1;
+            node->total_header_lenght = offset_ethernet + 40;
+            return 0;
+        }
         switch (protocolo){
             case 0:
                 cond_break_loop++;
+                if (curr_index + 1 >= recvlen) return 0;
                 protocolo = buffer[curr_index];
                 curr_index+=((int)buffer[curr_index + 1] + 1)*8;
+                if (curr_index > recvlen) return 0;
                 // hop-by-hop 
                 // primeiro octeto/byte - prox header
                 // segundo octeto/byte - tamanho do header
@@ -121,8 +129,10 @@ void fill_ipv6(unsigned char *buffer, FullInternetPacket* node, int offset_ether
             
             case 43:
                 cond_break_loop++;
+                if (curr_index + 1 >= recvlen) return 0;
                 protocolo = buffer[curr_index];
-                curr_index+=((int)buffer[curr_index + 1] + 1)*8; 
+                curr_index+=((int)buffer[curr_index + 1] + 1)*8;
+                if (curr_index > recvlen) return 0; 
                 // routing options
                 // primeiro octeto/byte - prox header
                 // segundo octeto/byte - tamanho do header
@@ -130,8 +140,10 @@ void fill_ipv6(unsigned char *buffer, FullInternetPacket* node, int offset_ether
         
             case 44:
                 cond_break_loop++;
+                if (curr_index >= recvlen) return 0;
                 protocolo = buffer[curr_index];
                 curr_index+=8;
+                if (curr_index > recvlen) return 0;
                 // fragment header
                 // primeiro octeto/byte - prox header
                 // 8 octetos/bytes - tamanho do header
@@ -144,8 +156,10 @@ void fill_ipv6(unsigned char *buffer, FullInternetPacket* node, int offset_ether
 
             case 60:
                 cond_break_loop++;
+                if (curr_index + 1 >= recvlen) return 0;
                 protocolo = buffer[curr_index];
                 curr_index+=((int)buffer[curr_index + 1] + 1)*8;
+                if (curr_index > recvlen) return 0;
                 // destination options
                 // primeiro octeto/byte - prox header
                 // segundo octeto/byte - tamanho do header
@@ -159,6 +173,7 @@ void fill_ipv6(unsigned char *buffer, FullInternetPacket* node, int offset_ether
         }
         node->total_header_lenght = curr_index;
     }
+    return 1;
 }
 
 void fill_ipv4(unsigned char *buffer, FullInternetPacket* node, int offset_ethernet){
@@ -220,6 +235,7 @@ FullInternetPacket* fill_fullPacket_node(unsigned char *buffer, long int recvlen
     }
     packetNode->tamanho_total_packet = recvlen;
     memset(packetNode, 0, sizeof(FullInternetPacket));
+    init_packet(packetNode);
     char buffer_txt[MAX_SIZE];
     
     // --------- Layer de Acesso a Rede ---------
@@ -391,7 +407,10 @@ FullInternetPacket* fill_fullPacket_node(unsigned char *buffer, long int recvlen
             free(packetNode);
             return NULL;
         }
-        fill_ipv6(buffer, packetNode,ethr_header_len);
+        if (!fill_ipv6(buffer, recvlen, packetNode, ethr_header_len)) {
+            free(packetNode);
+            return NULL;
+        }
         transport_offset = packetNode->total_header_lenght;
         switch (packetNode->protocolo_transporte){
             case 6:

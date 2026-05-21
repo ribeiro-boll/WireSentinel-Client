@@ -36,6 +36,34 @@ Buffer_List *final_buffer = NULL;
 PacketList *inicio_packet = NULL;
 PacketList *final_packet = NULL;
 
+static ssize_t send_all(int socketfd, const char *buffer, size_t length) {
+    size_t sent_total = 0;
+
+    while (sent_total < length) {
+        ssize_t sent = send(socketfd, buffer + sent_total, length - sent_total, 0);
+        if (sent <= 0) {
+            return -1;
+        }
+        sent_total += (size_t) sent;
+    }
+
+    return (ssize_t) sent_total;
+}
+
+static ssize_t recv_http_response(int socketfd, char *buffer, size_t buffer_size) {
+    if (buffer == NULL || buffer_size == 0) return -1;
+
+    ssize_t len = recv(socketfd, buffer, buffer_size - 1, 0);
+    if (len <= 0) {
+        buffer[0] = '\0';
+        return len;
+    }
+
+    buffer[len] = '\0';
+    return len;
+}
+
+
 void *routine_processing(void*arg) {
     (void) arg;
     while (1){
@@ -91,7 +119,6 @@ void case_not_ok( char* addr, char* prt, char* key, int socketfd_server, int* co
     unsigned char digest[HMAC_SHA256_SIZE];
     unsigned int digest_len = 0;
     get_time(time, 30);
-    get_file_key(&key);
     //printf("%s\n", key);
     snprintf(json, 512, "{\r\n  X-WireSentinel-Timestamp: %s,\r\n  User-Agent: %s\r\n}", time, "WireSentinel-Agent/1.0");
     HMAC(EVP_sha256(), key, (int)strlen(key), (const unsigned char *) json, (int)strlen(json), digest,&digest_len);
@@ -110,20 +137,28 @@ void case_not_ok( char* addr, char* prt, char* key, int socketfd_server, int* co
     );
     //free(key);
     //printf("test: %d\n", debug++);
-    ssize_t len = send(socketfd_server, buffer, strlen(buffer), 0);
+    ssize_t len = send_all(socketfd_server, buffer, strlen(buffer));
     //printf("test: %d\n", debug++);
     if (len<0) {
         printf("[%s] Erro! falha ao enviar a requisição a chave UUID do servidor... verifique se está tudo certo com o servidor e tente novamente...\n", time);
         exit(1);
     }
-    char http_response_buffer[2048];
-    recv(socketfd_server,http_response_buffer, 2048,0);
+    char http_response_buffer[4096];
+    ssize_t recv_len = recv_http_response(socketfd_server, http_response_buffer, sizeof(http_response_buffer));
+    if (recv_len <= 0) {
+        printf("[%s] Erro! servidor nao respondeu ao registro do UUID.\n", time);
+        exit(1);
+    }
     *code = extract_status_code(http_response_buffer);
     if (*code != 200) {
         printf("algo de errado, codigo de resposta http: %d", *code);
         exit(1);
     }
     extract_uuid(http_response_buffer, uuid);
+    if (*uuid == NULL) {
+        printf("[%s] Erro! resposta do servidor nao contem UUID valido.\n", time);
+        exit(1);
+    }
     set_UUID(*uuid);
 }
 void *routine_payload(void*arg) {
@@ -172,16 +207,20 @@ void *routine_payload(void*arg) {
         );
         //printf("test: %d\n", debug++);
         printf("teste\n"); // 3
-        ssize_t len = send(socketfd_server, buffer, strlen(buffer), 0);
+        ssize_t len = send_all(socketfd_server, buffer, strlen(buffer));
         //printf("test: %d\n", debug++);
         if (len<0) {
             printf("[%s] Erro! falha ao enviar a requisição a chave UUID do servidor... verifique se está tudo certo com o servidor e tente novamente...\n", time);
             exit(1);
         }
         printf("teste\n"); // 4
-        char http_response_buffer[2048];
-        recv(socketfd_server,http_response_buffer, 2048,0);
-        code = extract_status_code(http_response_buffer);
+        char http_response_buffer[4096];
+        ssize_t recv_len = recv_http_response(socketfd_server, http_response_buffer, sizeof(http_response_buffer));
+        if (recv_len <= 0) {
+            code = -1;
+        } else {
+            code = extract_status_code(http_response_buffer);
+        }
         printf("teste\n"); // 5
         //printf("test: %d\n", debug++);
         printf("%d\n",code);
@@ -202,7 +241,7 @@ void *routine_payload(void*arg) {
         free(key);
     }
     int contador_loop_reset_uuid = 0;
-    char recv_buffer[2048];
+    char recv_buffer[4096];
     while (1){
         pthread_mutex_lock(&mutex_processing);
         while (inicio_packet==NULL) {
@@ -218,19 +257,19 @@ void *routine_payload(void*arg) {
         pthread_mutex_unlock(&mutex_processing);
 
         generate_request(urlbuffer, json_payload, &json_request, uuid);
-        ssize_t result = send(socketfd_server, json_request, strlen(json_request), 0);
+        ssize_t result = send_all(socketfd_server, json_request, strlen(json_request));
         while (result == -1) {
             close(socketfd_server);
             start_server(&socketfd_server, &socketConfig, &socketList, addr, prt);
-            result = send(socketfd_server, json_request, strlen(json_request), 0);
+            result = send_all(socketfd_server, json_request, strlen(json_request));
         }
-        result = recv(socketfd_server, recv_buffer, 2048, 0);
-        while (result == -1) {
+        result = recv_http_response(socketfd_server, recv_buffer, sizeof(recv_buffer));
+        while (result <= 0) {
             close(socketfd_server);
             start_server(&socketfd_server, &socketConfig, &socketList, addr, prt);
-            result = send(socketfd_server, json_request, strlen(json_request), 0);
+            result = send_all(socketfd_server, json_request, strlen(json_request));
             if (result == -1) continue;
-            result = recv(socketfd_server, recv_buffer, 2048, 0);
+            result = recv_http_response(socketfd_server, recv_buffer, sizeof(recv_buffer));
         }
         if (extract_status_code(recv_buffer) != 200) {
             char *key = NULL;
