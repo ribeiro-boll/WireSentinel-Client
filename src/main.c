@@ -117,7 +117,8 @@ void case_not_ok( char* addr, char* prt, char* key, int socketfd_server, int* co
     }
     *code = extract_status_code(http_response_buffer);
     if (*code != 200) {
-        printf("algo de errado, codigo de resposta http: %d", *code);
+        get_time(time, MAX_SIZE);
+        printf("[%s] Algo de errado, codigo de resposta http: %d", time, *code);
         exit(1);
     }
     extract_uuid(http_response_buffer, uuid);
