@@ -125,7 +125,7 @@ void case_not_ok( char* addr, char* prt, char* key, int socketfd_server, int* co
         printf("[%s] Erro! resposta do servidor nao contem UUID valido.\n", time);
         exit(1);
     }
-    printf("[%s]New UUID: (> %s <)\n", time, *uuid);
+    printf("[%s] New UUID: (> %s <)\n", time, *uuid);
     set_UUID(*uuid);
 }
 
