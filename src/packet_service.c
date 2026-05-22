@@ -347,7 +347,7 @@ FullInternetPacket* fill_fullPacket_node(unsigned char *buffer, long int recvlen
             break;
 
         default:
-            strcpy(packetNode->protocolo_ip, "Unknown");
+            strcpy(packetNode->protocolo_ip, "Unknown/None");
             define_protocol = 10;
             strcpy(packetNode->ip_origem, "Null");
             strcpy(packetNode->ip_destino, "Null");

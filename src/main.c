@@ -55,13 +55,11 @@ static ssize_t send_all(int socketfd, const char *buffer, size_t length) {
 
 static ssize_t recv_http_response(int socketfd, char *buffer, size_t buffer_size) {
     if (buffer == NULL || buffer_size == 0) return -1;
-
     ssize_t len = recv(socketfd, buffer, buffer_size - 1, 0);
     if (len <= 0) {
         buffer[0] = '\0';
         return len;
     }
-
     buffer[len] = '\0';
     return len;
 }
@@ -82,9 +80,7 @@ void start_server(int * socketfd, struct addrinfo *socketConfig, struct addrinfo
         printf("[%s] Falha ao conectar com o servidor (> %s:%s <), tentando novamente em 5 segundos...\n",time, address, port);
         sleep(5);
     }
-
     get_time(time, MAX_SIZE);
-    printf("[%s] Conectado com o servidor (> %s:%s <) iniciando transmissão de dados...\n", time, address, port);
 }
 void case_not_ok( char* addr, char* prt, char* key, int socketfd_server, int* code, char** uuid) {
     char buffer[2048], time[30];
@@ -104,6 +100,7 @@ void case_not_ok( char* addr, char* prt, char* key, int socketfd_server, int* co
         "Host: %s:%s\r\n"
         "X-WireSentinel-Timestamp: %s\r\n"
         "X-WireSentinel-Credential: %s\r\n"
+        "Connection: close\r\n"
         "User-Agent: WireSentinel-Agent/1.0\r\n\r\n",
         addr, prt, time, digest_hex
     );
@@ -128,6 +125,7 @@ void case_not_ok( char* addr, char* prt, char* key, int socketfd_server, int* co
         printf("[%s] Erro! resposta do servidor nao contem UUID valido.\n", time);
         exit(1);
     }
+    printf("[%s]New UUID: (> %s <)\n", time, *uuid);
     set_UUID(*uuid);
 }
 
@@ -164,26 +162,26 @@ void *routine_processing(void*arg) {
             pthread_mutex_lock(&mutex_processing);
             cond_payload_ready =1;
             test = 0;
-            pthread_cond_signal(&cond_payload);
-            pthread_mutex_unlock(&mutex_processing);
             secs = time(NULL);
+            pthread_mutex_unlock(&mutex_processing);
+            pthread_cond_signal(&cond_payload);
         }
     }
 }
 
 void *routine_payload(void*arg) {
-    int debug = 0;
     (void) arg;
     char *addr, *prt, urlbuffer[2048];
     get_file_url(&addr);
     get_file_prt(&prt);
     snprintf(urlbuffer, 2048, "%s:%s", addr, prt);
-    int socketfd_server;
+
     struct timeval timeout;
-    timeout.tv_sec = 1;
+    timeout.tv_sec = 10;
     timeout.tv_usec = 0;
     struct addrinfo socketConfig;
     struct addrinfo *socketList;
+    int socketfd_server;
     start_server(&socketfd_server, &socketConfig, &socketList, addr, prt);
     setsockopt(socketfd_server, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
     char time[30], *key;
@@ -209,9 +207,13 @@ void *routine_payload(void*arg) {
             "X-WireSentinel-Timestamp: %s\r\n"
             "X-WireSentinel-Credential: %s\r\n"
             "X-WireSentinel-UUID: %s\r\n"
+            "Connection: close\r\n"
             "User-Agent: WireSentinel-Agent/1.0\r\n\r\n",
             addr, prt, time, digest_hex, uuid
         );
+        close(socketfd_server);
+        start_server(&socketfd_server, &socketConfig, &socketList, addr, prt);
+        setsockopt(socketfd_server, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
         ssize_t len = send_all(socketfd_server, buffer, strlen(buffer));
         if (len<0) {
             printf("[%s] Erro! falha ao enviar a requisição a chave UUID do servidor... verifique se está tudo certo com o servidor e tente novamente...\n", time);
@@ -228,7 +230,11 @@ void *routine_payload(void*arg) {
             get_UUID(&uuid);
         }
         else {
+            close(socketfd_server);
+            start_server(&socketfd_server, &socketConfig, &socketList, addr, prt);
+            setsockopt(socketfd_server, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
             case_not_ok(addr, prt, key, socketfd_server, &code, &uuid);
+            get_time(time, 30);
         }
         free(key);
     }
@@ -245,27 +251,30 @@ void *routine_payload(void*arg) {
         }
         char *json_payload = malloc(sizeof(char) * MAX_JSON_SIZE);
         char *json_request = malloc(sizeof(char) * MAX_JSON_SIZE);
-
         PacketList *local_copy = inicio_packet;
         local_count = nmbr_packets;
         inicio_packet = NULL;
         final_packet = NULL;
         nmbr_packets = 0;
-        cond_payload_ready =0;
         pthread_mutex_unlock(&mutex_processing);
         generate_json_payload(local_copy, &json_payload);
         generate_request(urlbuffer, json_payload, &json_request, uuid);
+        close(socketfd_server);
+        start_server(&socketfd_server, &socketConfig, &socketList, addr, prt);
+        setsockopt(socketfd_server, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
         ssize_t result = send_all(socketfd_server, json_request, strlen(json_request));
         free_list(&local_copy, &local_count);
         while (result == -1) {
             close(socketfd_server);
             start_server(&socketfd_server, &socketConfig, &socketList, addr, prt);
+            setsockopt(socketfd_server, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
             result = send_all(socketfd_server, json_request, strlen(json_request));
         }
         result = recv_http_response(socketfd_server, recv_buffer, sizeof(recv_buffer));
         while (result <= 0) {
             close(socketfd_server);
             start_server(&socketfd_server, &socketConfig, &socketList, addr, prt);
+            setsockopt(socketfd_server, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
             result = send_all(socketfd_server, json_request, strlen(json_request));
             if (result == -1) continue;
             result = recv_http_response(socketfd_server, recv_buffer, sizeof(recv_buffer));
@@ -273,11 +282,15 @@ void *routine_payload(void*arg) {
         if (extract_status_code(recv_buffer) != 200) {
             char *key = NULL;
             get_file_key(&key);
+            close(socketfd_server);
+            start_server(&socketfd_server, &socketConfig, &socketList, addr, prt);
+            setsockopt(socketfd_server, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
             case_not_ok(addr, prt,  key, socketfd_server, &code, &uuid);
             free(key);
         }
         get_time(time, MAX_SIZE);
         printf("[%s] Envio da requisicao ao servidor completo! Aguardando proximo payload...\n",time);
+        cond_payload_ready =0;
         free(json_payload);
         free(json_request);
     }

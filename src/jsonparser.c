@@ -88,7 +88,7 @@ void generate_json_payload(PacketList *original_inicio, char *buffer[]) {
                 strcat(temporary_buffer, buffer_aplicacao);
             }
             else{
-                strcat(temporary_buffer, "      \"protocolo_aplicacao\": \"Unknown/None\"\n");    
+                strcat(temporary_buffer, "      \"protocolo_aplicacao\": \"Unknown\"\n");
             }
             break;    
         case 17:
@@ -104,7 +104,7 @@ void generate_json_payload(PacketList *original_inicio, char *buffer[]) {
                 strcat(temporary_buffer, buffer_aplicacao);
             }
             else{
-                strcat(temporary_buffer, "      \"protocolo_aplicacao\": \"Unknown/None\"\n");    
+                strcat(temporary_buffer, "      \"protocolo_aplicacao\": \"Unknown\"\n");
             }
             break;
         
@@ -113,7 +113,7 @@ void generate_json_payload(PacketList *original_inicio, char *buffer[]) {
             break;
 
         default:
-            strcat(temporary_buffer, "      \"protocolo_transporte\": \"Unknown/None\"\n");
+            strcat(temporary_buffer, "      \"protocolo_transporte\": \"Unknown\"\n");
             break;
         }                
         strcat(temporary_buffer, "    }");
@@ -150,6 +150,7 @@ void generate_json_header(char* host, const unsigned long int content_length, ch
         "X-WireSentinel-Timestamp: %s\r\n"
         "X-WireSentinel-Credential: %s\r\n"
         "X-WireSentinel-UUID: %s\r\n"
+        "Connection: close\r\n"
         "User-Agent: WireSentinel-Agent/1.0\r\n\r\n",
         host, content_length, time, digest_hex, uuid
     );
